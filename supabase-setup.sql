@@ -55,7 +55,11 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 
 -- Políticas para PROFILES
--- Usuário pode ver e editar apenas seu próprio perfil
+-- Remover políticas existentes antes de recriar
+DROP POLICY IF EXISTS "Usuários podem ver próprio perfil" ON profiles;
+DROP POLICY IF EXISTS "Usuários podem inserir próprio perfil" ON profiles;
+DROP POLICY IF EXISTS "Usuários podem atualizar próprio perfil" ON profiles;
+
 CREATE POLICY "Usuários podem ver próprio perfil"
     ON profiles FOR SELECT
     USING (auth.uid() = id);
@@ -69,7 +73,10 @@ CREATE POLICY "Usuários podem atualizar próprio perfil"
     USING (auth.uid() = id);
 
 -- Políticas para ORDERS
--- Usuário pode ver e criar apenas seus próprios pedidos
+DROP POLICY IF EXISTS "Usuários podem ver próprios pedidos" ON orders;
+DROP POLICY IF EXISTS "Usuários podem criar pedidos" ON orders;
+DROP POLICY IF EXISTS "Usuários podem atualizar próprios pedidos" ON orders;
+
 CREATE POLICY "Usuários podem ver próprios pedidos"
     ON orders FOR SELECT
     USING (auth.uid() = user_id);
@@ -83,7 +90,9 @@ CREATE POLICY "Usuários podem atualizar próprios pedidos"
     USING (auth.uid() = user_id);
 
 -- Políticas para ORDER_ITEMS
--- Usuário pode ver e criar itens dos seus pedidos
+DROP POLICY IF EXISTS "Usuários podem ver itens dos próprios pedidos" ON order_items;
+DROP POLICY IF EXISTS "Usuários podem criar itens nos próprios pedidos" ON order_items;
+
 CREATE POLICY "Usuários podem ver itens dos próprios pedidos"
     ON order_items FOR SELECT
     USING (
@@ -112,6 +121,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers para updated_at
+DROP TRIGGER IF EXISTS trigger_profiles_updated_at ON profiles;
+DROP TRIGGER IF EXISTS trigger_orders_updated_at ON orders;
+
 CREATE TRIGGER trigger_profiles_updated_at
     BEFORE UPDATE ON profiles
     FOR EACH ROW
