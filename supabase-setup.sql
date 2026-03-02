@@ -10,9 +10,21 @@ CREATE TABLE IF NOT EXISTS profiles (
     full_name TEXT NOT NULL,
     email TEXT NOT NULL,
     instrument TEXT,
+    role TEXT NOT NULL DEFAULT 'musician' CHECK (role IN ('musician', 'admin')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Adicionar coluna role se a tabela já existe
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'profiles' AND column_name = 'role'
+    ) THEN
+        ALTER TABLE profiles ADD COLUMN role TEXT NOT NULL DEFAULT 'musician' CHECK (role IN ('musician', 'admin'));
+    END IF;
+END $$;
 
 -- 2. Tabela de Pedidos
 CREATE TABLE IF NOT EXISTS orders (
@@ -44,6 +56,20 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+
+-- ============================================================
+-- FUNÇÃO AUXILIAR: verificar se o usuário é admin
+-- ============================================================
+CREATE OR REPLACE FUNCTION is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM profiles 
+        WHERE id = auth.uid() AND role = 'admin'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS) - Segurança por Usuário
@@ -55,14 +81,18 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 
 -- Políticas para PROFILES
--- Remover políticas existentes antes de recriar
 DROP POLICY IF EXISTS "Usuários podem ver próprio perfil" ON profiles;
+DROP POLICY IF EXISTS "Admins podem ver todos os perfis" ON profiles;
 DROP POLICY IF EXISTS "Usuários podem inserir próprio perfil" ON profiles;
 DROP POLICY IF EXISTS "Usuários podem atualizar próprio perfil" ON profiles;
 
 CREATE POLICY "Usuários podem ver próprio perfil"
     ON profiles FOR SELECT
     USING (auth.uid() = id);
+
+CREATE POLICY "Admins podem ver todos os perfis"
+    ON profiles FOR SELECT
+    USING (is_admin());
 
 CREATE POLICY "Usuários podem inserir próprio perfil"
     ON profiles FOR INSERT
@@ -74,12 +104,18 @@ CREATE POLICY "Usuários podem atualizar próprio perfil"
 
 -- Políticas para ORDERS
 DROP POLICY IF EXISTS "Usuários podem ver próprios pedidos" ON orders;
+DROP POLICY IF EXISTS "Admins podem ver todos os pedidos" ON orders;
 DROP POLICY IF EXISTS "Usuários podem criar pedidos" ON orders;
 DROP POLICY IF EXISTS "Usuários podem atualizar próprios pedidos" ON orders;
+DROP POLICY IF EXISTS "Admins podem atualizar todos os pedidos" ON orders;
 
 CREATE POLICY "Usuários podem ver próprios pedidos"
     ON orders FOR SELECT
     USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins podem ver todos os pedidos"
+    ON orders FOR SELECT
+    USING (is_admin());
 
 CREATE POLICY "Usuários podem criar pedidos"
     ON orders FOR INSERT
@@ -89,8 +125,13 @@ CREATE POLICY "Usuários podem atualizar próprios pedidos"
     ON orders FOR UPDATE
     USING (auth.uid() = user_id);
 
+CREATE POLICY "Admins podem atualizar todos os pedidos"
+    ON orders FOR UPDATE
+    USING (is_admin());
+
 -- Políticas para ORDER_ITEMS
 DROP POLICY IF EXISTS "Usuários podem ver itens dos próprios pedidos" ON order_items;
+DROP POLICY IF EXISTS "Admins podem ver todos os itens" ON order_items;
 DROP POLICY IF EXISTS "Usuários podem criar itens nos próprios pedidos" ON order_items;
 
 CREATE POLICY "Usuários podem ver itens dos próprios pedidos"
@@ -100,6 +141,10 @@ CREATE POLICY "Usuários podem ver itens dos próprios pedidos"
             SELECT id FROM orders WHERE user_id = auth.uid()
         )
     );
+
+CREATE POLICY "Admins podem ver todos os itens"
+    ON order_items FOR SELECT
+    USING (is_admin());
 
 CREATE POLICY "Usuários podem criar itens nos próprios pedidos"
     ON order_items FOR INSERT
@@ -133,3 +178,10 @@ CREATE TRIGGER trigger_orders_updated_at
     BEFORE UPDATE ON orders
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- COMO PROMOVER UM USUÁRIO A ADMINISTRADOR:
+-- Execute no SQL Editor do Supabase:
+-- 
+-- UPDATE profiles SET role = 'admin' WHERE email = 'seu-email@exemplo.com';
+-- ============================================================

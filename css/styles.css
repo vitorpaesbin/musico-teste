@@ -932,6 +932,131 @@ a:hover {
     display: none !important;
 }
 
+/* ========== ADMIN ========== */
+.admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: rgba(108, 92, 231, 0.2);
+    color: var(--primary-light);
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+}
+
+.admin-order-card {
+    background: var(--bg-card);
+    border: 1px solid var(--gray-800);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    transition: var(--transition);
+    margin-bottom: 12px;
+}
+
+.admin-order-card:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.admin-order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.admin-order-user {
+    font-size: 13px;
+    color: var(--primary-light);
+    font-weight: 600;
+}
+
+.admin-order-user i {
+    margin-right: 4px;
+}
+
+.admin-order-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.admin-order-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+.admin-order-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.admin-order-actions select {
+    padding: 6px 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--gray-700);
+    border-radius: var(--radius-sm);
+    color: var(--gray-200);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.admin-order-actions select:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.btn-admin-action {
+    padding: 6px 12px;
+    font-size: 11px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-admin-save {
+    background: var(--success);
+    color: var(--white);
+}
+
+.btn-admin-save:hover {
+    opacity: 0.85;
+}
+
+.btn-admin-details {
+    background: var(--bg-input);
+    color: var(--gray-200);
+    border: 1px solid var(--gray-700);
+}
+
+.btn-admin-details:hover {
+    border-color: var(--primary);
+    color: var(--primary-light);
+}
+
+.nav-link.admin-only,
+.mobile-nav-link.admin-only {
+    color: var(--primary-light);
+}
+
+.nav-link.admin-only i,
+.mobile-nav-link.admin-only i {
+    color: var(--primary-light);
+}
+
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
     .navbar-nav,

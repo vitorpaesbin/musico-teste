@@ -5,6 +5,7 @@
 const Auth = {
     currentUser: null,
     currentProfile: null,
+    isAdmin: false,
 
     init() {
         // Event listeners de formulário
@@ -204,7 +205,7 @@ const Auth = {
         }
     },
 
-    async createProfile(userId, name, email, instrument) {
+    async createProfile(userId, name, email, instrument, role = 'musician') {
         try {
             const { error } = await supabaseClient
                 .from('profiles')
@@ -212,7 +213,8 @@ const Auth = {
                     id: userId,
                     full_name: name,
                     email: email,
-                    instrument: instrument
+                    instrument: instrument,
+                    role: role
                 });
 
             if (error && !error.message.includes('duplicate')) {
@@ -260,15 +262,21 @@ const Auth = {
             this.currentProfile = data || {
                 full_name: this.currentUser.user_metadata?.full_name || 'Usuário',
                 email: this.currentUser.email,
-                instrument: this.currentUser.user_metadata?.instrument || '-'
+                instrument: this.currentUser.user_metadata?.instrument || '-',
+                role: 'musician'
             };
+
+            // Verificar se é admin
+            this.isAdmin = this.currentProfile.role === 'admin';
         } catch (error) {
             console.error('Erro ao carregar perfil:', error);
             this.currentProfile = {
                 full_name: this.currentUser.user_metadata?.full_name || 'Usuário',
                 email: this.currentUser.email,
-                instrument: this.currentUser.user_metadata?.instrument || '-'
+                instrument: this.currentUser.user_metadata?.instrument || '-',
+                role: 'musician'
             };
+            this.isAdmin = false;
         }
     },
 
@@ -295,6 +303,21 @@ const Auth = {
         const userName = this.currentProfile?.full_name || 'Usuário';
         document.getElementById('user-name').textContent = userName;
 
+        // Mostrar/esconder elementos de admin
+        document.querySelectorAll('.admin-only').forEach(el => {
+            if (this.isAdmin) {
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        });
+
+        // Badge de admin no nome
+        if (this.isAdmin) {
+            document.getElementById('user-name').innerHTML = 
+                userName + ' <span class="admin-badge"><i class="fas fa-shield-alt"></i> Admin</span>';
+        }
+
         // Atualizar perfil
         document.getElementById('profile-name').textContent = userName;
         document.getElementById('profile-email').textContent = this.currentProfile?.email || '-';
@@ -302,6 +325,11 @@ const Auth = {
             this.getInstrumentLabel(this.currentProfile?.instrument);
         document.getElementById('profile-since').textContent = 
             new Date(this.currentUser.created_at).toLocaleDateString('pt-BR');
+
+        // Mostrar role no perfil
+        const roleLabel = this.isAdmin ? 'Administrador' : 'Músico';
+        const profileRole = document.getElementById('profile-role');
+        if (profileRole) profileRole.textContent = roleLabel;
 
         // Carregar dados da app
         App.init();

@@ -100,6 +100,9 @@
                 <a href="#" class="nav-link" data-page="my-orders">
                     <i class="fas fa-list"></i> Meus Pedidos
                 </a>
+                <a href="#" class="nav-link admin-only hidden" data-page="admin">
+                    <i class="fas fa-shield-alt"></i> Admin
+                </a>
             </nav>
             <div class="navbar-user">
                 <span id="user-name" class="user-name"></span>
@@ -122,6 +125,10 @@
             <a href="#" class="mobile-nav-link" data-page="my-orders">
                 <i class="fas fa-list"></i>
                 <span>Pedidos</span>
+            </a>
+            <a href="#" class="mobile-nav-link admin-only hidden" data-page="admin">
+                <i class="fas fa-shield-alt"></i>
+                <span>Admin</span>
             </a>
             <a href="#" class="mobile-nav-link" data-page="profile">
                 <i class="fas fa-user"></i>
@@ -316,6 +323,60 @@
                 </div>
             </section>
 
+            <!-- ===== Painel Admin ===== -->
+            <section id="page-admin" class="page admin-only">
+                <div class="page-header">
+                    <h2><i class="fas fa-shield-alt"></i> Painel do Administrador</h2>
+                    <p>Gerencie todos os pedidos e usuários</p>
+                </div>
+
+                <!-- Stats Admin -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-total">
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="admin-stat-users">0</span>
+                            <span class="stat-label">Músicos</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-pending">
+                        <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="admin-stat-orders">0</span>
+                            <span class="stat-label">Total Pedidos</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-approved">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="admin-stat-pending">0</span>
+                            <span class="stat-label">Pendentes</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-delivered">
+                        <div class="stat-icon"><i class="fas fa-check-double"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="admin-stat-completed">0</span>
+                            <span class="stat-label">Concluídos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtros Admin -->
+                <div class="orders-filters">
+                    <button class="filter-btn active" data-admin-filter="all">Todos</button>
+                    <button class="filter-btn" data-admin-filter="pendente">Pendentes</button>
+                    <button class="filter-btn" data-admin-filter="aprovado">Aprovados</button>
+                    <button class="filter-btn" data-admin-filter="entregue">Entregues</button>
+                    <button class="filter-btn" data-admin-filter="cancelado">Cancelados</button>
+                </div>
+
+                <!-- Lista de Todos os Pedidos -->
+                <div id="admin-orders-list" class="orders-list">
+                    <p class="empty-state"><i class="fas fa-inbox"></i> Nenhum pedido encontrado</p>
+                </div>
+            </section>
+
             <!-- ===== Perfil ===== -->
             <section id="page-profile" class="page">
                 <div class="page-header">
@@ -331,6 +392,7 @@
                         <p><strong>Nome:</strong> <span id="profile-name">-</span></p>
                         <p><strong>E-mail:</strong> <span id="profile-email">-</span></p>
                         <p><strong>Instrumento:</strong> <span id="profile-instrument">-</span></p>
+                        <p><strong>Função:</strong> <span id="profile-role">-</span></p>
                         <p><strong>Membro desde:</strong> <span id="profile-since">-</span></p>
                     </div>
                     <button id="logout-btn-profile" class="btn btn-outline">

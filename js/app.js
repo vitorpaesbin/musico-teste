@@ -6,6 +6,8 @@ const App = {
     orders: [],
     currentItems: [],
     currentFilter: 'all',
+    adminOrders: [],
+    adminFilter: 'all',
 
     init() {
         this.setupNavigation();
@@ -13,6 +15,12 @@ const App = {
         this.setupModal();
         this.setupFilters();
         this.loadOrders();
+
+        // Inicializar admin se aplicável
+        if (Auth.isAdmin) {
+            this.setupAdminFilters();
+            this.loadAdminOrders();
+        }
     },
 
     // ============================================================
@@ -52,6 +60,9 @@ const App = {
         // Recarregar dados se necessário
         if (page === 'dashboard' || page === 'my-orders') {
             this.loadOrders();
+        }
+        if (page === 'admin' && Auth.isAdmin) {
+            this.loadAdminOrders();
         }
     },
 
@@ -437,5 +448,221 @@ const App = {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    },
+
+    // ============================================================
+    // ADMIN - PAINEL DE ADMINISTRAÇÃO
+    // ============================================================
+    setupAdminFilters() {
+        document.querySelectorAll('[data-admin-filter]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-admin-filter]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.adminFilter = btn.dataset.adminFilter;
+                this.renderAdminOrders();
+            });
+        });
+    },
+
+    async loadAdminOrders() {
+        if (!Auth.isAdmin) return;
+
+        try {
+            // Carregar todos os pedidos (RLS permite para admin)
+            const { data: ordersData, error: ordersError } = await supabaseClient
+                .from('orders')
+                .select(`
+                    *,
+                    order_items (*)
+                `)
+                .order('created_at', { ascending: false });
+
+            if (ordersError) throw ordersError;
+
+            // Carregar todos os perfis para mostrar nomes
+            const { data: profilesData, error: profilesError } = await supabaseClient
+                .from('profiles')
+                .select('id, full_name, email, instrument');
+
+            if (profilesError) throw profilesError;
+
+            // Mapear perfis por ID
+            const profilesMap = {};
+            (profilesData || []).forEach(p => {
+                profilesMap[p.id] = p;
+            });
+
+            // Associar perfil a cada pedido
+            this.adminOrders = (ordersData || []).map(order => ({
+                ...order,
+                profile: profilesMap[order.user_id] || { full_name: 'Usuário desconhecido', email: '-' }
+            }));
+
+            this.renderAdminOrders();
+            this.updateAdminStats(profilesData || []);
+        } catch (error) {
+            console.error('Erro ao carregar pedidos (admin):', error);
+        }
+    },
+
+    updateAdminStats(profiles) {
+        const musicians = profiles.filter(p => p.id !== Auth.currentUser.id || true).length;
+        const totalOrders = this.adminOrders.length;
+        const pending = this.adminOrders.filter(o => o.status === 'pendente').length;
+        const completed = this.adminOrders.filter(o => o.status === 'entregue' || o.status === 'aprovado').length;
+
+        document.getElementById('admin-stat-users').textContent = musicians;
+        document.getElementById('admin-stat-orders').textContent = totalOrders;
+        document.getElementById('admin-stat-pending').textContent = pending;
+        document.getElementById('admin-stat-completed').textContent = completed;
+    },
+
+    renderAdminOrders() {
+        const container = document.getElementById('admin-orders-list');
+        if (!container) return;
+
+        let filtered = this.adminOrders;
+        if (this.adminFilter !== 'all') {
+            filtered = this.adminOrders.filter(o => o.status === this.adminFilter);
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<p class="empty-state"><i class="fas fa-inbox"></i> Nenhum pedido encontrado</p>';
+            return;
+        }
+
+        container.innerHTML = filtered.map(order => this.renderAdminOrderCard(order)).join('');
+    },
+
+    renderAdminOrderCard(order) {
+        const date = new Date(order.created_at).toLocaleDateString('pt-BR', {
+            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+
+        const items = order.order_items || [];
+        const itemsList = items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+        const profile = order.profile;
+        const hasUrgent = items.some(i => i.urgency === 'muito_urgente' || i.urgency === 'urgente');
+
+        return `
+            <div class="admin-order-card">
+                <div class="admin-order-header">
+                    <div>
+                        <span class="admin-order-user"><i class="fas fa-user"></i> ${this.escapeHtml(profile.full_name)}</span>
+                        <span class="order-id" style="margin-left: 12px;">#${order.id.substring(0, 8).toUpperCase()}</span>
+                    </div>
+                    <span class="order-date">${date}</span>
+                </div>
+                <div class="admin-order-body">
+                    <div class="admin-order-info">
+                        <div class="order-items-preview">${this.escapeHtml(itemsList || 'Sem itens')}</div>
+                        <div class="order-items-count">
+                            ${items.length} item(ns) · ${this.escapeHtml(profile.email)}
+                            ${hasUrgent ? ' <span class="urgency-badge urgency-urgente">URGENTE</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="admin-order-actions">
+                        <select id="status-${order.id}" onchange="">
+                            <option value="pendente" ${order.status === 'pendente' ? 'selected' : ''}>\u23F3 Pendente</option>
+                            <option value="aprovado" ${order.status === 'aprovado' ? 'selected' : ''}>\u2705 Aprovado</option>
+                            <option value="entregue" ${order.status === 'entregue' ? 'selected' : ''}>\uD83D\uDCE6 Entregue</option>
+                            <option value="cancelado" ${order.status === 'cancelado' ? 'selected' : ''}>\u274C Cancelado</option>
+                        </select>
+                        <button class="btn-admin-action btn-admin-save" onclick="App.updateOrderStatus('${order.id}')">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                        <button class="btn-admin-action btn-admin-details" onclick="App.showAdminOrderDetails('${order.id}')">
+                            <i class="fas fa-eye"></i> Ver
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    async updateOrderStatus(orderId) {
+        const select = document.getElementById(`status-${orderId}`);
+        if (!select) return;
+
+        const newStatus = select.value;
+
+        try {
+            showLoading();
+            const { error } = await supabaseClient
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', orderId);
+
+            if (error) throw error;
+
+            showToast('Status atualizado com sucesso!', 'success');
+            await this.loadAdminOrders();
+        } catch (error) {
+            console.error('Erro ao atualizar status:', error);
+            showToast('Erro ao atualizar status', 'error');
+        } finally {
+            hideLoading();
+        }
+    },
+
+    showAdminOrderDetails(orderId) {
+        const order = this.adminOrders.find(o => o.id === orderId);
+        if (!order) return;
+
+        const items = order.order_items || [];
+        const profile = order.profile;
+        const date = new Date(order.created_at).toLocaleDateString('pt-BR', {
+            day: '2-digit', month: 'long', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+
+        const modalBody = document.getElementById('modal-body');
+        modalBody.innerHTML = `
+            <div class="modal-detail">
+                <label>Músico</label>
+                <span><i class="fas fa-user" style="color:var(--primary-light)"></i> ${this.escapeHtml(profile.full_name)} (${this.escapeHtml(profile.email)})</span>
+            </div>
+            <div class="modal-detail">
+                <label>Instrumento</label>
+                <span>${Auth.getInstrumentLabel(profile.instrument)}</span>
+            </div>
+            <div class="modal-detail">
+                <label>Pedido</label>
+                <span>#${order.id.substring(0, 8).toUpperCase()}</span>
+            </div>
+            <div class="modal-detail">
+                <label>Data</label>
+                <span>${date}</span>
+            </div>
+            <div class="modal-detail">
+                <label>Status</label>
+                <span class="status-badge status-${order.status}">
+                    ${this.getStatusLabel(order.status)}
+                </span>
+            </div>
+            <div class="modal-items-list">
+                <label style="font-size: 12px; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.5px;">
+                    Itens do Pedido (${items.length})
+                </label>
+                ${items.map(item => `
+                    <div class="modal-item">
+                        <strong>${this.escapeHtml(item.name)}</strong>
+                        <p>
+                            <i class="fas fa-tag"></i> ${this.getCategoryLabel(item.category)} \u00b7 
+                            Qtd: ${item.quantity}
+                            ${item.brand ? ' \u00b7 ' + this.escapeHtml(item.brand) : ''}
+                        </p>
+                        <p>
+                            <span class="urgency-badge urgency-${item.urgency}">
+                                ${this.getUrgencyLabel(item.urgency)}
+                            </span>
+                        </p>
+                        ${item.notes ? `<p style="margin-top: 4px; font-style: italic;">"${this.escapeHtml(item.notes)}"</p>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        document.getElementById('order-modal').classList.remove('hidden');
     }
 };
