@@ -138,32 +138,19 @@ const Auth = {
 
             if (error) throw error;
 
-            // Criar perfil na tabela profiles
-            if (data.user) {
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert({
-                        id: data.user.id,
-                        full_name: name,
-                        email: email,
-                        instrument: instrument
-                    });
-
-                if (profileError) {
-                    console.error('Erro ao criar perfil:', profileError);
-                }
-            }
-
             // Verificar se precisa de confirmação por email
             if (data.session) {
                 // Login automático (confirmação de email desabilitada)
                 this.currentUser = data.user;
+
+                // Criar perfil na tabela profiles (agora com sessão ativa)
+                await this.createProfile(data.user.id, name, email, instrument);
                 await this.loadProfile();
                 this.showApp();
                 showToast('Conta criada com sucesso!', 'success');
             } else {
                 // Precisa confirmar email
-                this.showMessage('Conta criada! Verifique seu e-mail para confirmar.', 'success');
+                this.showMessage('Conta criada! Verifique seu e-mail para confirmar e depois faça login.', 'success');
                 document.getElementById('register-form').classList.add('hidden');
                 document.getElementById('login-form').classList.remove('hidden');
             }
@@ -179,15 +166,54 @@ const Auth = {
         }
     },
 
+    async createProfile(userId, name, email, instrument) {
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .insert({
+                    id: userId,
+                    full_name: name,
+                    email: email,
+                    instrument: instrument
+                });
+
+            if (error && !error.message.includes('duplicate')) {
+                console.error('Erro ao criar perfil:', error);
+            }
+        } catch (err) {
+            console.error('Erro ao criar perfil:', err);
+        }
+    },
+
     async loadProfile() {
         if (!this.currentUser) return;
 
         try {
-            const { data, error } = await supabase
+            let { data, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', this.currentUser.id)
                 .single();
+
+            // Se o perfil não existe, criar a partir dos metadados do usuário
+            if (error && error.code === 'PGRST116') {
+                const meta = this.currentUser.user_metadata || {};
+                await this.createProfile(
+                    this.currentUser.id,
+                    meta.full_name || 'Usuário',
+                    this.currentUser.email,
+                    meta.instrument || ''
+                );
+
+                // Tentar carregar novamente
+                const result = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', this.currentUser.id)
+                    .single();
+                data = result.data;
+                error = result.error;
+            }
 
             if (error && error.code !== 'PGRST116') {
                 console.error('Erro ao carregar perfil:', error);
