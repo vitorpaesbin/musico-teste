@@ -112,7 +112,11 @@ const Auth = {
 
     async register() {
         const name = document.getElementById('register-name').value.trim();
-        const email = document.getElementById('register-email').value.trim();
+        // Sanitizar email: lowercase, remover espaços e caracteres invisíveis
+        const email = document.getElementById('register-email').value
+            .trim()
+            .toLowerCase()
+            .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, ''); // remove zero-width e nbsp
         const password = document.getElementById('register-password').value;
         const instrument = document.getElementById('register-instrument').value;
 
@@ -121,13 +125,27 @@ const Auth = {
             return;
         }
 
+        // Validar formato do email antes de enviar
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            this.showMessage('Digite um e-mail válido (ex: nome@email.com)', 'error');
+            return;
+        }
+
+        if (password.length < 6) {
+            this.showMessage('A senha deve ter pelo menos 6 caracteres', 'error');
+            return;
+        }
+
         try {
             showLoading();
             
+            console.log('Tentando cadastrar com email:', email);
+
             // Criar usuário no Supabase Auth
             const { data, error } = await supabaseClient.auth.signUp({
-                email,
-                password,
+                email: email,
+                password: password,
                 options: {
                     data: {
                         full_name: name,
@@ -168,10 +186,12 @@ const Auth = {
             if (error.message) {
                 if (error.message.includes('already registered')) {
                     msg = 'Este e-mail já está cadastrado';
-                } else if (error.message.includes('valid email')) {
-                    msg = 'Digite um e-mail válido';
-                } else if (error.message.includes('at least')) {
+                } else if (error.message.includes('invalid') || error.message.includes('valid email')) {
+                    msg = 'E-mail considerado inválido pelo servidor. Tente outro e-mail ou verifique as configurações de autenticação no painel do Supabase.';
+                } else if (error.message.includes('at least') || error.message.includes('weak')) {
                     msg = 'A senha deve ter pelo menos 6 caracteres';
+                } else if (error.message.includes('rate') || error.message.includes('limit')) {
+                    msg = 'Muitas tentativas. Aguarde alguns minutos.';
                 } else {
                     msg = 'Erro: ' + error.message;
                 }
