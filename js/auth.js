@@ -1,0 +1,308 @@
+// ============================================================
+// MÓDULO DE AUTENTICAÇÃO
+// ============================================================
+
+const Auth = {
+    currentUser: null,
+    currentProfile: null,
+
+    init() {
+        // Event listeners de formulário
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.login();
+        });
+
+        document.getElementById('register-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.register();
+        });
+
+        // Alternar entre login e cadastro
+        document.getElementById('show-register').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+            this.hideMessage();
+        });
+
+        document.getElementById('show-login').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+            this.hideMessage();
+        });
+
+        // Botões de logout
+        document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+        document.getElementById('logout-btn-profile').addEventListener('click', () => this.logout());
+
+        // Verificar sessão ativa
+        this.checkSession();
+    },
+
+    async checkSession() {
+        try {
+            showLoading();
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                this.currentUser = session.user;
+                await this.loadProfile();
+                this.showApp();
+            } else {
+                this.showAuth();
+            }
+        } catch (error) {
+            console.error('Erro ao verificar sessão:', error);
+            this.showAuth();
+        } finally {
+            hideLoading();
+        }
+
+        // Listener de mudança de auth
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session) {
+                this.currentUser = session.user;
+                await this.loadProfile();
+                this.showApp();
+            } else if (event === 'SIGNED_OUT') {
+                this.currentUser = null;
+                this.currentProfile = null;
+                this.showAuth();
+            }
+        });
+    },
+
+    async login() {
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        if (!email || !password) {
+            this.showMessage('Preencha todos os campos', 'error');
+            return;
+        }
+
+        try {
+            showLoading();
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) throw error;
+
+            this.currentUser = data.user;
+            await this.loadProfile();
+            this.showApp();
+            showToast('Login realizado com sucesso!', 'success');
+        } catch (error) {
+            console.error('Erro no login:', error);
+            let msg = 'Erro ao fazer login';
+            if (error.message.includes('Invalid login')) {
+                msg = 'E-mail ou senha incorretos';
+            } else if (error.message.includes('Email not confirmed')) {
+                msg = 'Confirme seu e-mail antes de fazer login';
+            }
+            this.showMessage(msg, 'error');
+        } finally {
+            hideLoading();
+        }
+    },
+
+    async register() {
+        const name = document.getElementById('register-name').value.trim();
+        const email = document.getElementById('register-email').value.trim();
+        const password = document.getElementById('register-password').value;
+        const instrument = document.getElementById('register-instrument').value;
+
+        if (!name || !email || !password || !instrument) {
+            this.showMessage('Preencha todos os campos', 'error');
+            return;
+        }
+
+        try {
+            showLoading();
+            
+            // Criar usuário no Supabase Auth
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: name,
+                        instrument: instrument
+                    }
+                }
+            });
+
+            if (error) throw error;
+
+            // Criar perfil na tabela profiles
+            if (data.user) {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: data.user.id,
+                        full_name: name,
+                        email: email,
+                        instrument: instrument
+                    });
+
+                if (profileError) {
+                    console.error('Erro ao criar perfil:', profileError);
+                }
+            }
+
+            // Verificar se precisa de confirmação por email
+            if (data.session) {
+                // Login automático (confirmação de email desabilitada)
+                this.currentUser = data.user;
+                await this.loadProfile();
+                this.showApp();
+                showToast('Conta criada com sucesso!', 'success');
+            } else {
+                // Precisa confirmar email
+                this.showMessage('Conta criada! Verifique seu e-mail para confirmar.', 'success');
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Erro no cadastro:', error);
+            let msg = 'Erro ao criar conta';
+            if (error.message.includes('already registered')) {
+                msg = 'Este e-mail já está cadastrado';
+            }
+            this.showMessage(msg, 'error');
+        } finally {
+            hideLoading();
+        }
+    },
+
+    async loadProfile() {
+        if (!this.currentUser) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', this.currentUser.id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') {
+                console.error('Erro ao carregar perfil:', error);
+            }
+
+            this.currentProfile = data || {
+                full_name: this.currentUser.user_metadata?.full_name || 'Usuário',
+                email: this.currentUser.email,
+                instrument: this.currentUser.user_metadata?.instrument || '-'
+            };
+        } catch (error) {
+            console.error('Erro ao carregar perfil:', error);
+            this.currentProfile = {
+                full_name: this.currentUser.user_metadata?.full_name || 'Usuário',
+                email: this.currentUser.email,
+                instrument: this.currentUser.user_metadata?.instrument || '-'
+            };
+        }
+    },
+
+    async logout() {
+        try {
+            showLoading();
+            await supabase.auth.signOut();
+            this.currentUser = null;
+            this.currentProfile = null;
+            this.showAuth();
+            showToast('Logout realizado', 'info');
+        } catch (error) {
+            console.error('Erro no logout:', error);
+        } finally {
+            hideLoading();
+        }
+    },
+
+    showApp() {
+        document.getElementById('auth-container').classList.add('hidden');
+        document.getElementById('app-container').classList.remove('hidden');
+
+        // Atualizar nome do usuário na navbar
+        const userName = this.currentProfile?.full_name || 'Usuário';
+        document.getElementById('user-name').textContent = userName;
+
+        // Atualizar perfil
+        document.getElementById('profile-name').textContent = userName;
+        document.getElementById('profile-email').textContent = this.currentProfile?.email || '-';
+        document.getElementById('profile-instrument').textContent = 
+            this.getInstrumentLabel(this.currentProfile?.instrument);
+        document.getElementById('profile-since').textContent = 
+            new Date(this.currentUser.created_at).toLocaleDateString('pt-BR');
+
+        // Carregar dados da app
+        App.init();
+    },
+
+    showAuth() {
+        document.getElementById('app-container').classList.add('hidden');
+        document.getElementById('auth-container').classList.remove('hidden');
+        
+        // Limpar formulários
+        document.getElementById('login-form').reset();
+        document.getElementById('register-form').reset();
+    },
+
+    showMessage(text, type) {
+        const el = document.getElementById('auth-message');
+        el.textContent = text;
+        el.className = `auth-message ${type}`;
+    },
+
+    hideMessage() {
+        const el = document.getElementById('auth-message');
+        el.className = 'auth-message hidden';
+    },
+
+    getInstrumentLabel(value) {
+        const map = {
+            'guitarra': 'Guitarra',
+            'violao': 'Violão',
+            'baixo': 'Baixo',
+            'bateria': 'Bateria',
+            'teclado': 'Teclado/Piano',
+            'violino': 'Violino',
+            'saxofone': 'Saxofone',
+            'trompete': 'Trompete',
+            'flauta': 'Flauta',
+            'voz': 'Voz/Canto',
+            'outro': 'Outro'
+        };
+        return map[value] || value || '-';
+    }
+};
+
+// ============================================================
+// FUNÇÕES UTILITÁRIAS GLOBAIS
+// ============================================================
+function showLoading() {
+    document.getElementById('loading').classList.remove('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loading').classList.add('hidden');
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast ${type}`;
+    
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3500);
+}
+
+// Iniciar autenticação quando DOM estiver pronto
+document.addEventListener('DOMContentLoaded', () => {
+    Auth.init();
+});

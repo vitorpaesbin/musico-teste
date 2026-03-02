@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MúsicoWeb - Pedido de Materiais</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- ========== TELA DE LOGIN/CADASTRO ========== -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <i class="fas fa-music"></i>
+                <h1>MúsicoWeb</h1>
+                <p>Sistema de Pedido de Materiais</p>
+            </div>
+
+            <!-- Login -->
+            <form id="login-form" class="auth-form">
+                <h2>Entrar</h2>
+                <div class="form-group">
+                    <label for="login-email"><i class="fas fa-envelope"></i> E-mail</label>
+                    <input type="email" id="login-email" placeholder="seu@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password"><i class="fas fa-lock"></i> Senha</label>
+                    <input type="password" id="login-password" placeholder="Sua senha" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+                <p class="auth-switch">
+                    Não tem conta? <a href="#" id="show-register">Cadastre-se</a>
+                </p>
+            </form>
+
+            <!-- Cadastro -->
+            <form id="register-form" class="auth-form hidden">
+                <h2>Criar Conta</h2>
+                <div class="form-group">
+                    <label for="register-name"><i class="fas fa-user"></i> Nome Completo</label>
+                    <input type="text" id="register-name" placeholder="Seu nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-email"><i class="fas fa-envelope"></i> E-mail</label>
+                    <input type="email" id="register-email" placeholder="seu@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password"><i class="fas fa-lock"></i> Senha</label>
+                    <input type="password" id="register-password" placeholder="Mínimo 6 caracteres" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="register-instrument"><i class="fas fa-guitar"></i> Instrumento Principal</label>
+                    <select id="register-instrument" required>
+                        <option value="">Selecione...</option>
+                        <option value="guitarra">Guitarra</option>
+                        <option value="violao">Violão</option>
+                        <option value="baixo">Baixo</option>
+                        <option value="bateria">Bateria</option>
+                        <option value="teclado">Teclado/Piano</option>
+                        <option value="violino">Violino</option>
+                        <option value="saxofone">Saxofone</option>
+                        <option value="trompete">Trompete</option>
+                        <option value="flauta">Flauta</option>
+                        <option value="voz">Voz/Canto</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-user-plus"></i> Cadastrar
+                </button>
+                <p class="auth-switch">
+                    Já tem conta? <a href="#" id="show-login">Fazer login</a>
+                </p>
+            </form>
+
+            <div id="auth-message" class="auth-message hidden"></div>
+        </div>
+    </div>
+
+    <!-- ========== APLICAÇÃO PRINCIPAL ========== -->
+    <div id="app-container" class="app-container hidden">
+        <!-- Header / Navbar -->
+        <header class="navbar">
+            <div class="navbar-brand">
+                <i class="fas fa-music"></i>
+                <span>MúsicoWeb</span>
+            </div>
+            <nav class="navbar-nav">
+                <a href="#" class="nav-link active" data-page="dashboard">
+                    <i class="fas fa-home"></i> Início
+                </a>
+                <a href="#" class="nav-link" data-page="new-order">
+                    <i class="fas fa-plus-circle"></i> Novo Pedido
+                </a>
+                <a href="#" class="nav-link" data-page="my-orders">
+                    <i class="fas fa-list"></i> Meus Pedidos
+                </a>
+            </nav>
+            <div class="navbar-user">
+                <span id="user-name" class="user-name"></span>
+                <button id="logout-btn" class="btn btn-outline btn-sm">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </header>
+
+        <!-- Mobile Nav -->
+        <nav class="mobile-nav">
+            <a href="#" class="mobile-nav-link active" data-page="dashboard">
+                <i class="fas fa-home"></i>
+                <span>Início</span>
+            </a>
+            <a href="#" class="mobile-nav-link" data-page="new-order">
+                <i class="fas fa-plus-circle"></i>
+                <span>Novo</span>
+            </a>
+            <a href="#" class="mobile-nav-link" data-page="my-orders">
+                <i class="fas fa-list"></i>
+                <span>Pedidos</span>
+            </a>
+            <a href="#" class="mobile-nav-link" data-page="profile">
+                <i class="fas fa-user"></i>
+                <span>Perfil</span>
+            </a>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <!-- ===== Dashboard ===== -->
+            <section id="page-dashboard" class="page active">
+                <div class="page-header">
+                    <h2><i class="fas fa-home"></i> Painel</h2>
+                    <p>Bem-vindo ao sistema de pedidos de materiais</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card stat-total">
+                        <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stat-total">0</span>
+                            <span class="stat-label">Total de Pedidos</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-pending">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stat-pending">0</span>
+                            <span class="stat-label">Pendentes</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-approved">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stat-approved">0</span>
+                            <span class="stat-label">Aprovados</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-delivered">
+                        <div class="stat-icon"><i class="fas fa-truck"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stat-delivered">0</span>
+                            <span class="stat-label">Entregues</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="recent-orders">
+                    <h3><i class="fas fa-history"></i> Pedidos Recentes</h3>
+                    <div id="recent-orders-list" class="orders-list">
+                        <p class="empty-state"><i class="fas fa-inbox"></i> Nenhum pedido ainda</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== Novo Pedido ===== -->
+            <section id="page-new-order" class="page">
+                <div class="page-header">
+                    <h2><i class="fas fa-plus-circle"></i> Novo Pedido</h2>
+                    <p>Preencha os dados para solicitar materiais</p>
+                </div>
+
+                <form id="order-form" class="order-form">
+                    <div class="form-section">
+                        <h3><i class="fas fa-tag"></i> Categoria</h3>
+                        <div class="category-grid">
+                            <label class="category-card">
+                                <input type="radio" name="category" value="cordas" required>
+                                <div class="category-content">
+                                    <i class="fas fa-guitar"></i>
+                                    <span>Cordas</span>
+                                </div>
+                            </label>
+                            <label class="category-card">
+                                <input type="radio" name="category" value="palhetas">
+                                <div class="category-content">
+                                    <i class="fas fa-hand-point-up"></i>
+                                    <span>Palhetas</span>
+                                </div>
+                            </label>
+                            <label class="category-card">
+                                <input type="radio" name="category" value="baquetas">
+                                <div class="category-content">
+                                    <i class="fas fa-drum"></i>
+                                    <span>Baquetas</span>
+                                </div>
+                            </label>
+                            <label class="category-card">
+                                <input type="radio" name="category" value="cabos">
+                                <div class="category-content">
+                                    <i class="fas fa-plug"></i>
+                                    <span>Cabos</span>
+                                </div>
+                            </label>
+                            <label class="category-card">
+                                <input type="radio" name="category" value="peles">
+                                <div class="category-content">
+                                    <i class="fas fa-circle"></i>
+                                    <span>Peles</span>
+                                </div>
+                            </label>
+                            <label class="category-card">
+                                <input type="radio" name="category" value="acessorios">
+                                <div class="category-content">
+                                    <i class="fas fa-toolbox"></i>
+                                    <span>Acessórios</span>
+                                </div>
+                            </label>
+                            <label class="category-card">
+                                <input type="radio" name="category" value="pecas">
+                                <div class="category-content">
+                                    <i class="fas fa-cogs"></i>
+                                    <span>Peças</span>
+                                </div>
+                            </label>
+                            <label class="category-card">
+                                <input type="radio" name="category" value="outros">
+                                <div class="category-content">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                    <span>Outros</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3><i class="fas fa-info-circle"></i> Detalhes do Material</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="item-name">Nome do Material *</label>
+                                <input type="text" id="item-name" placeholder="Ex: Jogo de cordas Elixir .010" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="item-qty">Quantidade *</label>
+                                <input type="number" id="item-qty" min="1" value="1" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="item-brand">Marca / Modelo</label>
+                                <input type="text" id="item-brand" placeholder="Ex: Elixir Nanoweb">
+                            </div>
+                            <div class="form-group">
+                                <label for="item-urgency">Urgência</label>
+                                <select id="item-urgency">
+                                    <option value="normal">Normal</option>
+                                    <option value="urgente">Urgente</option>
+                                    <option value="muito_urgente">Muito Urgente</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="item-notes">Observações</label>
+                            <textarea id="item-notes" rows="3" placeholder="Detalhes adicionais sobre o material..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Itens adicionados -->
+                    <div id="items-list-section" class="form-section hidden">
+                        <h3><i class="fas fa-shopping-cart"></i> Itens do Pedido</h3>
+                        <div id="items-list" class="items-list"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="add-item-btn" class="btn btn-secondary">
+                            <i class="fas fa-plus"></i> Adicionar Mais Itens
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Enviar Pedido
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ===== Meus Pedidos ===== -->
+            <section id="page-my-orders" class="page">
+                <div class="page-header">
+                    <h2><i class="fas fa-list"></i> Meus Pedidos</h2>
+                    <p>Acompanhe o status dos seus pedidos</p>
+                </div>
+
+                <div class="orders-filters">
+                    <button class="filter-btn active" data-filter="all">Todos</button>
+                    <button class="filter-btn" data-filter="pendente">Pendentes</button>
+                    <button class="filter-btn" data-filter="aprovado">Aprovados</button>
+                    <button class="filter-btn" data-filter="entregue">Entregues</button>
+                    <button class="filter-btn" data-filter="cancelado">Cancelados</button>
+                </div>
+
+                <div id="orders-list" class="orders-list">
+                    <p class="empty-state"><i class="fas fa-inbox"></i> Nenhum pedido encontrado</p>
+                </div>
+            </section>
+
+            <!-- ===== Perfil ===== -->
+            <section id="page-profile" class="page">
+                <div class="page-header">
+                    <h2><i class="fas fa-user"></i> Meu Perfil</h2>
+                    <p>Gerencie suas informações</p>
+                </div>
+                
+                <div class="profile-card">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="profile-info">
+                        <p><strong>Nome:</strong> <span id="profile-name">-</span></p>
+                        <p><strong>E-mail:</strong> <span id="profile-email">-</span></p>
+                        <p><strong>Instrumento:</strong> <span id="profile-instrument">-</span></p>
+                        <p><strong>Membro desde:</strong> <span id="profile-since">-</span></p>
+                    </div>
+                    <button id="logout-btn-profile" class="btn btn-outline">
+                        <i class="fas fa-sign-out-alt"></i> Sair da Conta
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal de Detalhes do Pedido -->
+    <div id="order-modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-alt"></i> Detalhes do Pedido</h3>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="modal-body" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
