@@ -138,6 +138,14 @@ const Auth = {
 
             if (error) throw error;
 
+            // Supabase retorna user sem identities quando o email já existe
+            if (data.user && data.user.identities && data.user.identities.length === 0) {
+                this.showMessage('Este e-mail já está cadastrado. Faça login.', 'error');
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+                return;
+            }
+
             // Verificar se precisa de confirmação por email
             if (data.session) {
                 // Login automático (confirmação de email desabilitada)
@@ -167,6 +175,8 @@ const Auth = {
                 } else {
                     msg = 'Erro: ' + error.message;
                 }
+            } else {
+                msg = 'Erro ao criar conta: ' + JSON.stringify(error);
             }
             this.showMessage(msg, 'error');
         } finally {
