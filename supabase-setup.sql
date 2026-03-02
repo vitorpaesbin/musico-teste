@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     email TEXT NOT NULL,
     instrument TEXT,
     role TEXT NOT NULL DEFAULT 'musician' CHECK (role IN ('musician', 'admin')),
+    active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -23,6 +24,17 @@ BEGIN
         WHERE table_name = 'profiles' AND column_name = 'role'
     ) THEN
         ALTER TABLE profiles ADD COLUMN role TEXT NOT NULL DEFAULT 'musician' CHECK (role IN ('musician', 'admin'));
+    END IF;
+END $$;
+
+-- Adicionar coluna active se a tabela já existe
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'profiles' AND column_name = 'active'
+    ) THEN
+        ALTER TABLE profiles ADD COLUMN active BOOLEAN NOT NULL DEFAULT true;
     END IF;
 END $$;
 
@@ -57,6 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_active ON profiles(active);
 
 -- ============================================================
 -- FUNÇÃO AUXILIAR: verificar se o usuário é admin
@@ -101,6 +114,11 @@ CREATE POLICY "Usuários podem inserir próprio perfil"
 CREATE POLICY "Usuários podem atualizar próprio perfil"
     ON profiles FOR UPDATE
     USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Admins podem atualizar todos os perfis" ON profiles;
+CREATE POLICY "Admins podem atualizar todos os perfis"
+    ON profiles FOR UPDATE
+    USING (is_admin());
 
 -- Políticas para ORDERS
 DROP POLICY IF EXISTS "Usuários podem ver próprios pedidos" ON orders;
@@ -184,4 +202,8 @@ CREATE TRIGGER trigger_orders_updated_at
 -- Execute no SQL Editor do Supabase:
 -- 
 -- UPDATE profiles SET role = 'admin' WHERE email = 'seu-email@exemplo.com';
+--
+-- ATIVAR/DESATIVAR MEMBRO MANUALMENTE:
+-- UPDATE profiles SET active = false WHERE email = 'email@exemplo.com';
+-- UPDATE profiles SET active = true WHERE email = 'email@exemplo.com';
 -- ============================================================

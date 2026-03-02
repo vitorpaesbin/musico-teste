@@ -50,7 +50,17 @@ const Auth = {
             if (session) {
                 this.currentUser = session.user;
                 await this.loadProfile();
-                this.showApp();
+
+                // Verificar se o membro está ativo
+                if (this.currentProfile && this.currentProfile.active === false) {
+                    await supabaseClient.auth.signOut();
+                    this.currentUser = null;
+                    this.currentProfile = null;
+                    this.showAuth();
+                    this.showMessage('Sua conta está inativa. Contate o administrador.', 'error');
+                } else {
+                    this.showApp();
+                }
             } else {
                 this.showAuth();
             }
@@ -66,6 +76,17 @@ const Auth = {
             if (event === 'SIGNED_IN' && session) {
                 this.currentUser = session.user;
                 await this.loadProfile();
+
+                // Verificar se o membro está ativo
+                if (this.currentProfile && this.currentProfile.active === false) {
+                    await supabaseClient.auth.signOut();
+                    this.currentUser = null;
+                    this.currentProfile = null;
+                    this.showAuth();
+                    this.showMessage('Sua conta está inativa. Contate o administrador.', 'error');
+                    return;
+                }
+
                 this.showApp();
             } else if (event === 'SIGNED_OUT') {
                 this.currentUser = null;
@@ -95,6 +116,16 @@ const Auth = {
 
             this.currentUser = data.user;
             await this.loadProfile();
+
+            // Verificar se o membro está ativo
+            if (this.currentProfile && this.currentProfile.active === false) {
+                await supabaseClient.auth.signOut();
+                this.currentUser = null;
+                this.currentProfile = null;
+                this.showMessage('Sua conta está inativa. Contate o administrador.', 'error');
+                return;
+            }
+
             this.showApp();
             showToast('Login realizado com sucesso!', 'success');
         } catch (error) {
@@ -214,7 +245,8 @@ const Auth = {
                     full_name: name,
                     email: email,
                     instrument: instrument,
-                    role: role
+                    role: role,
+                    active: true
                 });
 
             if (error && !error.message.includes('duplicate')) {
@@ -330,6 +362,14 @@ const Auth = {
         const roleLabel = this.isAdmin ? 'Administrador' : 'Músico';
         const profileRole = document.getElementById('profile-role');
         if (profileRole) profileRole.textContent = roleLabel;
+
+        // Mostrar status ativo/inativo no perfil
+        const profileActive = document.getElementById('profile-active');
+        if (profileActive) {
+            const isActive = this.currentProfile?.active !== false;
+            profileActive.textContent = isActive ? 'Ativo' : 'Inativo';
+            profileActive.style.color = isActive ? 'var(--success)' : 'var(--error)';
+        }
 
         // Carregar dados da app
         App.init();

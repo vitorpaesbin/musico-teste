@@ -8,6 +8,8 @@ const App = {
     currentFilter: 'all',
     adminOrders: [],
     adminFilter: 'all',
+    adminMembers: [],
+    memberFilter: 'all',
 
     init() {
         this.setupNavigation();
@@ -18,8 +20,11 @@ const App = {
 
         // Inicializar admin se aplicável
         if (Auth.isAdmin) {
+            this.setupAdminTabs();
             this.setupAdminFilters();
+            this.setupMemberFilters();
             this.loadAdminOrders();
+            this.loadMembers();
         }
     },
 
@@ -664,5 +669,157 @@ const App = {
         `;
 
         document.getElementById('order-modal').classList.remove('hidden');
+    },
+
+    // ============================================================
+    // ADMIN - TABS
+    // ============================================================
+    setupAdminTabs() {
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
+                const targetId = `admin-tab-${tab.dataset.adminTab}`;
+                const target = document.getElementById(targetId);
+                if (target) target.classList.add('active');
+
+                // Recarregar dados da tab ativa
+                if (tab.dataset.adminTab === 'members') {
+                    this.loadMembers();
+                } else if (tab.dataset.adminTab === 'orders') {
+                    this.loadAdminOrders();
+                }
+            });
+        });
+    },
+
+    // ============================================================
+    // ADMIN - GESTÃO DE MEMBROS
+    // ============================================================
+    setupMemberFilters() {
+        document.querySelectorAll('[data-member-filter]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-member-filter]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.memberFilter = btn.dataset.memberFilter;
+                this.renderMembers();
+            });
+        });
+    },
+
+    async loadMembers() {
+        if (!Auth.isAdmin) return;
+
+        try {
+            const { data, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .order('full_name', { ascending: true });
+
+            if (error) throw error;
+
+            this.adminMembers = data || [];
+            this.renderMembers();
+            this.updateMemberStats();
+        } catch (error) {
+            console.error('Erro ao carregar membros:', error);
+            showToast('Erro ao carregar membros', 'error');
+        }
+    },
+
+    updateMemberStats() {
+        const total = this.adminMembers.length;
+        const active = this.adminMembers.filter(m => m.active !== false).length;
+        const inactive = this.adminMembers.filter(m => m.active === false).length;
+
+        const elTotal = document.getElementById('admin-stat-total-members');
+        const elActive = document.getElementById('admin-stat-active-members');
+        const elInactive = document.getElementById('admin-stat-inactive-members');
+
+        if (elTotal) elTotal.textContent = total;
+        if (elActive) elActive.textContent = active;
+        if (elInactive) elInactive.textContent = inactive;
+    },
+
+    renderMembers() {
+        const container = document.getElementById('admin-members-list');
+        if (!container) return;
+
+        let filtered = this.adminMembers;
+        if (this.memberFilter === 'active') {
+            filtered = this.adminMembers.filter(m => m.active !== false);
+        } else if (this.memberFilter === 'inactive') {
+            filtered = this.adminMembers.filter(m => m.active === false);
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<p class="empty-state"><i class="fas fa-users"></i> Nenhum membro encontrado</p>';
+            return;
+        }
+
+        container.innerHTML = filtered.map(member => this.renderMemberCard(member)).join('');
+    },
+
+    renderMemberCard(member) {
+        const isActive = member.active !== false;
+        const isAdminUser = member.role === 'admin';
+        const since = new Date(member.created_at).toLocaleDateString('pt-BR');
+        const isSelf = member.id === Auth.currentUser.id;
+
+        return `
+            <div class="member-card ${isActive ? '' : 'member-inactive'}">
+                <div class="member-info">
+                    <div class="member-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="member-details">
+                        <span class="member-name">
+                            ${this.escapeHtml(member.full_name)}
+                            ${isAdminUser ? '<span class="admin-badge"><i class="fas fa-shield-alt"></i> Admin</span>' : ''}
+                        </span>
+                        <span class="member-email">${this.escapeHtml(member.email)}</span>
+                        <span class="member-instrument">
+                            <i class="fas fa-guitar"></i> ${Auth.getInstrumentLabel(member.instrument)} · Desde ${since}
+                        </span>
+                    </div>
+                </div>
+                <div class="member-actions">
+                    <span class="member-status-badge ${isActive ? 'status-active' : 'status-inactive'}">
+                        ${isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                    ${isSelf ? '<span style="font-size:11px;color:var(--gray-500)">Você</span>' : `
+                        <label class="toggle-switch" title="${isActive ? 'Desativar membro' : 'Ativar membro'}">
+                            <input type="checkbox" ${isActive ? 'checked' : ''} 
+                                onchange="App.toggleMemberActive('${member.id}', this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    `}
+                </div>
+            </div>
+        `;
+    },
+
+    async toggleMemberActive(memberId, active) {
+        try {
+            showLoading();
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({ active: active })
+                .eq('id', memberId);
+
+            if (error) throw error;
+
+            const memberName = this.adminMembers.find(m => m.id === memberId)?.full_name || 'Membro';
+            showToast(`${memberName} ${active ? 'ativado' : 'desativado'} com sucesso!`, 'success');
+            await this.loadMembers();
+        } catch (error) {
+            console.error('Erro ao alterar status do membro:', error);
+            showToast('Erro ao alterar status do membro', 'error');
+            await this.loadMembers(); // Recarregar para reverter toggle visual
+        } finally {
+            hideLoading();
+        }
     }
 };

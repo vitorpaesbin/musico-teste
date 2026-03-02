@@ -330,50 +330,103 @@
                     <p>Gerencie todos os pedidos e usuários</p>
                 </div>
 
-                <!-- Stats Admin -->
-                <div class="stats-grid">
-                    <div class="stat-card stat-total">
-                        <div class="stat-icon"><i class="fas fa-users"></i></div>
-                        <div class="stat-info">
-                            <span class="stat-number" id="admin-stat-users">0</span>
-                            <span class="stat-label">Músicos</span>
+                <!-- Tabs Admin -->
+                <div class="admin-tabs">
+                    <button class="admin-tab active" data-admin-tab="orders">
+                        <i class="fas fa-clipboard-list"></i> Pedidos
+                    </button>
+                    <button class="admin-tab" data-admin-tab="members">
+                        <i class="fas fa-users"></i> Membros
+                    </button>
+                </div>
+
+                <!-- ===== TAB: Pedidos ===== -->
+                <div id="admin-tab-orders" class="admin-tab-content active">
+                    <!-- Stats Admin -->
+                    <div class="stats-grid">
+                        <div class="stat-card stat-total">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="admin-stat-users">0</span>
+                                <span class="stat-label">Músicos</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-pending">
+                            <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="admin-stat-orders">0</span>
+                                <span class="stat-label">Total Pedidos</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-approved">
+                            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="admin-stat-pending">0</span>
+                                <span class="stat-label">Pendentes</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-delivered">
+                            <div class="stat-icon"><i class="fas fa-check-double"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="admin-stat-completed">0</span>
+                                <span class="stat-label">Concluídos</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card stat-pending">
-                        <div class="stat-icon"><i class="fas fa-clipboard-list"></i></div>
-                        <div class="stat-info">
-                            <span class="stat-number" id="admin-stat-orders">0</span>
-                            <span class="stat-label">Total Pedidos</span>
-                        </div>
+
+                    <!-- Filtros Admin -->
+                    <div class="orders-filters">
+                        <button class="filter-btn active" data-admin-filter="all">Todos</button>
+                        <button class="filter-btn" data-admin-filter="pendente">Pendentes</button>
+                        <button class="filter-btn" data-admin-filter="aprovado">Aprovados</button>
+                        <button class="filter-btn" data-admin-filter="entregue">Entregues</button>
+                        <button class="filter-btn" data-admin-filter="cancelado">Cancelados</button>
                     </div>
-                    <div class="stat-card stat-approved">
-                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                        <div class="stat-info">
-                            <span class="stat-number" id="admin-stat-pending">0</span>
-                            <span class="stat-label">Pendentes</span>
-                        </div>
-                    </div>
-                    <div class="stat-card stat-delivered">
-                        <div class="stat-icon"><i class="fas fa-check-double"></i></div>
-                        <div class="stat-info">
-                            <span class="stat-number" id="admin-stat-completed">0</span>
-                            <span class="stat-label">Concluídos</span>
-                        </div>
+
+                    <!-- Lista de Todos os Pedidos -->
+                    <div id="admin-orders-list" class="orders-list">
+                        <p class="empty-state"><i class="fas fa-inbox"></i> Nenhum pedido encontrado</p>
                     </div>
                 </div>
 
-                <!-- Filtros Admin -->
-                <div class="orders-filters">
-                    <button class="filter-btn active" data-admin-filter="all">Todos</button>
-                    <button class="filter-btn" data-admin-filter="pendente">Pendentes</button>
-                    <button class="filter-btn" data-admin-filter="aprovado">Aprovados</button>
-                    <button class="filter-btn" data-admin-filter="entregue">Entregues</button>
-                    <button class="filter-btn" data-admin-filter="cancelado">Cancelados</button>
-                </div>
+                <!-- ===== TAB: Membros ===== -->
+                <div id="admin-tab-members" class="admin-tab-content">
+                    <!-- Stats Membros -->
+                    <div class="stats-grid">
+                        <div class="stat-card stat-total">
+                            <div class="stat-icon"><i class="fas fa-users"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="admin-stat-total-members">0</span>
+                                <span class="stat-label">Total Membros</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-approved">
+                            <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="admin-stat-active-members">0</span>
+                                <span class="stat-label">Ativos</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-pending">
+                            <div class="stat-icon"><i class="fas fa-user-slash"></i></div>
+                            <div class="stat-info">
+                                <span class="stat-number" id="admin-stat-inactive-members">0</span>
+                                <span class="stat-label">Inativos</span>
+                            </div>
+                        </div>
+                    </div>
 
-                <!-- Lista de Todos os Pedidos -->
-                <div id="admin-orders-list" class="orders-list">
-                    <p class="empty-state"><i class="fas fa-inbox"></i> Nenhum pedido encontrado</p>
+                    <!-- Filtros Membros -->
+                    <div class="orders-filters">
+                        <button class="filter-btn active" data-member-filter="all">Todos</button>
+                        <button class="filter-btn" data-member-filter="active">Ativos</button>
+                        <button class="filter-btn" data-member-filter="inactive">Inativos</button>
+                    </div>
+
+                    <!-- Lista de Membros -->
+                    <div id="admin-members-list" class="members-list">
+                        <p class="empty-state"><i class="fas fa-users"></i> Nenhum membro encontrado</p>
+                    </div>
                 </div>
             </section>
 
@@ -393,6 +446,7 @@
                         <p><strong>E-mail:</strong> <span id="profile-email">-</span></p>
                         <p><strong>Instrumento:</strong> <span id="profile-instrument">-</span></p>
                         <p><strong>Função:</strong> <span id="profile-role">-</span></p>
+                        <p><strong>Status:</strong> <span id="profile-active">-</span></p>
                         <p><strong>Membro desde:</strong> <span id="profile-since">-</span></p>
                     </div>
                     <button id="logout-btn-profile" class="btn btn-outline">
