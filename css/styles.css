@@ -1205,6 +1205,51 @@ a:hover {
     color: var(--error);
 }
 
+/* Botão Excluir Membro */
+.btn-member-delete {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--gray-700);
+    background: transparent;
+    color: var(--gray-500);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: var(--transition);
+}
+
+.btn-member-delete:hover {
+    background: rgba(214, 48, 49, 0.15);
+    border-color: var(--error);
+    color: var(--error);
+}
+
+/* Botão Danger */
+.btn-danger {
+    background: var(--error);
+    color: var(--white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-danger:hover {
+    opacity: 0.85;
+}
+
+.member-status-badge.status-inactive {
+    background: rgba(214, 48, 49, 0.15);
+    color: var(--error);
+}
+
 /* Toggle Switch */
 .toggle-switch {
     position: relative;

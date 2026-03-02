@@ -120,6 +120,11 @@ CREATE POLICY "Admins podem atualizar todos os perfis"
     ON profiles FOR UPDATE
     USING (is_admin());
 
+DROP POLICY IF EXISTS "Admins podem excluir perfis" ON profiles;
+CREATE POLICY "Admins podem excluir perfis"
+    ON profiles FOR DELETE
+    USING (is_admin());
+
 -- Políticas para ORDERS
 DROP POLICY IF EXISTS "Usuários podem ver próprios pedidos" ON orders;
 DROP POLICY IF EXISTS "Admins podem ver todos os pedidos" ON orders;

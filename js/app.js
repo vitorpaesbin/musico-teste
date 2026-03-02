@@ -795,6 +795,9 @@ const App = {
                                 onchange="App.toggleMemberActive('${member.id}', this.checked)">
                             <span class="toggle-slider"></span>
                         </label>
+                        <button class="btn-member-delete" onclick="App.confirmDeleteMember('${member.id}')" title="Excluir membro">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     `}
                 </div>
             </div>
@@ -817,7 +820,63 @@ const App = {
         } catch (error) {
             console.error('Erro ao alterar status do membro:', error);
             showToast('Erro ao alterar status do membro', 'error');
-            await this.loadMembers(); // Recarregar para reverter toggle visual
+            await this.loadMembers();
+        } finally {
+            hideLoading();
+        }
+    },
+
+    confirmDeleteMember(memberId) {
+        const member = this.adminMembers.find(m => m.id === memberId);
+        if (!member) return;
+
+        // Criar modal de confirmação
+        const modalBody = document.getElementById('modal-body');
+        modalBody.innerHTML = `
+            <div style="text-align: center; padding: 20px 0;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--error); margin-bottom: 16px;"></i>
+                <h3 style="color: var(--gray-100); margin-bottom: 8px;">Excluir Membro</h3>
+                <p style="color: var(--gray-400); margin-bottom: 8px;">Tem certeza que deseja excluir o membro:</p>
+                <p style="color: var(--gray-100); font-weight: 600; font-size: 16px; margin-bottom: 4px;">${this.escapeHtml(member.full_name)}</p>
+                <p style="color: var(--gray-500); font-size: 13px; margin-bottom: 24px;">${this.escapeHtml(member.email)}</p>
+                <p style="color: var(--error); font-size: 12px; margin-bottom: 24px;">
+                    <i class="fas fa-warning"></i> Esta ação é irreversível. Todos os pedidos deste membro também serão removidos.
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button class="btn btn-outline" onclick="App.closeModal()" style="min-width: 100px;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button class="btn btn-danger" onclick="App.deleteMember('${member.id}')" style="min-width: 100px;">
+                        <i class="fas fa-trash-alt"></i> Excluir
+                    </button>
+                </div>
+            </div>
+        `;
+        document.getElementById('order-modal').classList.remove('hidden');
+    },
+
+    async deleteMember(memberId) {
+        try {
+            this.closeModal();
+            showLoading();
+
+            const memberName = this.adminMembers.find(m => m.id === memberId)?.full_name || 'Membro';
+
+            // Excluir perfil (CASCADE remove pedidos e itens)
+            const { error } = await supabaseClient
+                .from('profiles')
+                .delete()
+                .eq('id', memberId);
+
+            if (error) throw error;
+
+            showToast(`${memberName} excluído com sucesso!`, 'success');
+            await this.loadMembers();
+            // Atualizar stats dos pedidos também
+            await this.loadAdminOrders();
+        } catch (error) {
+            console.error('Erro ao excluir membro:', error);
+            showToast('Erro ao excluir membro. ' + (error.message || ''), 'error');
         } finally {
             hideLoading();
         }
