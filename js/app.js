@@ -167,7 +167,7 @@ const App = {
             showLoading();
 
             // Criar pedido
-            const { data: order, error: orderError } = await supabase
+            const { data: order, error: orderError } = await supabaseClient
                 .from('orders')
                 .insert({
                     user_id: Auth.currentUser.id,
@@ -191,7 +191,7 @@ const App = {
                 notes: item.notes
             }));
 
-            const { error: itemsError } = await supabase
+            const { error: itemsError } = await supabaseClient
                 .from('order_items')
                 .insert(orderItems);
 
@@ -235,7 +235,7 @@ const App = {
 
     async loadOrders() {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('orders')
                 .select(`
                     *,

@@ -44,7 +44,7 @@ const Auth = {
     async checkSession() {
         try {
             showLoading();
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
             
             if (session) {
                 this.currentUser = session.user;
@@ -61,7 +61,7 @@ const Auth = {
         }
 
         // Listener de mudança de auth
-        supabase.auth.onAuthStateChange(async (event, session) => {
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 this.currentUser = session.user;
                 await this.loadProfile();
@@ -85,7 +85,7 @@ const Auth = {
 
         try {
             showLoading();
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email,
                 password
             });
@@ -125,7 +125,7 @@ const Auth = {
             showLoading();
             
             // Criar usuário no Supabase Auth
-            const { data, error } = await supabase.auth.signUp({
+            const { data, error } = await supabaseClient.auth.signUp({
                 email,
                 password,
                 options: {
@@ -186,7 +186,7 @@ const Auth = {
 
     async createProfile(userId, name, email, instrument) {
         try {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('profiles')
                 .insert({
                     id: userId,
@@ -207,7 +207,7 @@ const Auth = {
         if (!this.currentUser) return;
 
         try {
-            let { data, error } = await supabase
+            let { data, error } = await supabaseClient
                 .from('profiles')
                 .select('*')
                 .eq('id', this.currentUser.id)
@@ -224,7 +224,7 @@ const Auth = {
                 );
 
                 // Tentar carregar novamente
-                const result = await supabase
+                const result = await supabaseClient
                     .from('profiles')
                     .select('*')
                     .eq('id', this.currentUser.id)
@@ -255,7 +255,7 @@ const Auth = {
     async logout() {
         try {
             showLoading();
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             this.currentUser = null;
             this.currentProfile = null;
             this.showAuth();
