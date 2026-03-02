@@ -157,8 +157,16 @@ const Auth = {
         } catch (error) {
             console.error('Erro no cadastro:', error);
             let msg = 'Erro ao criar conta';
-            if (error.message.includes('already registered')) {
-                msg = 'Este e-mail já está cadastrado';
+            if (error.message) {
+                if (error.message.includes('already registered')) {
+                    msg = 'Este e-mail já está cadastrado';
+                } else if (error.message.includes('valid email')) {
+                    msg = 'Digite um e-mail válido';
+                } else if (error.message.includes('at least')) {
+                    msg = 'A senha deve ter pelo menos 6 caracteres';
+                } else {
+                    msg = 'Erro: ' + error.message;
+                }
             }
             this.showMessage(msg, 'error');
         } finally {
