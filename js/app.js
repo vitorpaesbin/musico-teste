@@ -579,6 +579,9 @@ const App = {
                         <button class="btn-admin-action btn-admin-details" onclick="App.showAdminOrderDetails('${order.id}')">
                             <i class="fas fa-eye"></i> Ver
                         </button>
+                        <button class="btn-admin-action btn-admin-delete" onclick="App.confirmDeleteOrder('${order.id}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -605,6 +608,78 @@ const App = {
         } catch (error) {
             console.error('Erro ao atualizar status:', error);
             showToast('Erro ao atualizar status', 'error');
+        } finally {
+            hideLoading();
+        }
+    },
+
+    confirmDeleteOrder(orderId) {
+        const order = this.adminOrders.find(o => o.id === orderId);
+        if (!order) return;
+
+        const profile = order.profile;
+        const items = order.order_items || [];
+        const itemsList = items.map(i => `${i.name} (x${i.quantity})`).join(', ');
+
+        const modalBody = document.getElementById('modal-body');
+        modalBody.innerHTML = `
+            <div style="text-align: center; padding: 20px 0;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--error); margin-bottom: 16px;"></i>
+                <h3 style="color: var(--gray-100); margin-bottom: 8px;">Excluir Pedido</h3>
+                <p style="color: var(--gray-400); margin-bottom: 12px;">Tem certeza que deseja excluir este pedido?</p>
+                <div style="background: var(--bg-input); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px; text-align: left;">
+                    <p style="color: var(--primary-light); font-weight: 600; font-size: 13px; margin-bottom: 4px;">
+                        <i class="fas fa-user"></i> ${this.escapeHtml(profile.full_name)}
+                    </p>
+                    <p style="color: var(--gray-400); font-size: 12px; margin-bottom: 4px;">
+                        Pedido #${order.id.substring(0, 8).toUpperCase()} · ${items.length} item(ns)
+                    </p>
+                    <p style="color: var(--gray-500); font-size: 12px;">
+                        ${this.escapeHtml(itemsList || 'Sem itens')}
+                    </p>
+                </div>
+                <p style="color: var(--error); font-size: 12px; margin-bottom: 24px;">
+                    <i class="fas fa-warning"></i> Esta ação é irreversível.
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button class="btn btn-outline" onclick="App.closeModal()" style="min-width: 100px;">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button class="btn btn-danger" onclick="App.deleteOrder('${order.id}')" style="min-width: 100px;">
+                        <i class="fas fa-trash-alt"></i> Excluir
+                    </button>
+                </div>
+            </div>
+        `;
+        document.getElementById('order-modal').classList.remove('hidden');
+    },
+
+    async deleteOrder(orderId) {
+        try {
+            this.closeModal();
+            showLoading();
+
+            // Excluir itens do pedido primeiro
+            const { error: itemsError } = await supabaseClient
+                .from('order_items')
+                .delete()
+                .eq('order_id', orderId);
+
+            if (itemsError) throw itemsError;
+
+            // Excluir o pedido
+            const { error: orderError } = await supabaseClient
+                .from('orders')
+                .delete()
+                .eq('id', orderId);
+
+            if (orderError) throw orderError;
+
+            showToast('Pedido excluído com sucesso!', 'success');
+            await this.loadAdminOrders();
+        } catch (error) {
+            console.error('Erro ao excluir pedido:', error);
+            showToast('Erro ao excluir pedido. ' + (error.message || ''), 'error');
         } finally {
             hideLoading();
         }

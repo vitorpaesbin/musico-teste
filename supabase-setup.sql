@@ -152,6 +152,11 @@ CREATE POLICY "Admins podem atualizar todos os pedidos"
     ON orders FOR UPDATE
     USING (is_admin());
 
+DROP POLICY IF EXISTS "Admins podem excluir pedidos" ON orders;
+CREATE POLICY "Admins podem excluir pedidos"
+    ON orders FOR DELETE
+    USING (is_admin());
+
 -- Políticas para ORDER_ITEMS
 DROP POLICY IF EXISTS "Usuários podem ver itens dos próprios pedidos" ON order_items;
 DROP POLICY IF EXISTS "Admins podem ver todos os itens" ON order_items;
@@ -176,6 +181,11 @@ CREATE POLICY "Usuários podem criar itens nos próprios pedidos"
             SELECT id FROM orders WHERE user_id = auth.uid()
         )
     );
+
+DROP POLICY IF EXISTS "Admins podem excluir itens de pedidos" ON order_items;
+CREATE POLICY "Admins podem excluir itens de pedidos"
+    ON order_items FOR DELETE
+    USING (is_admin());
 
 -- ============================================================
 -- FUNÇÃO PARA ATUALIZAR updated_at AUTOMATICAMENTE

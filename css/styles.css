@@ -1047,6 +1047,18 @@ a:hover {
     color: var(--primary-light);
 }
 
+.btn-admin-delete {
+    background: transparent;
+    color: var(--gray-500);
+    border: 1px solid var(--gray-700);
+}
+
+.btn-admin-delete:hover {
+    background: rgba(214, 48, 49, 0.15);
+    border-color: var(--error);
+    color: var(--error);
+}
+
 .nav-link.admin-only,
 .mobile-nav-link.admin-only {
     color: var(--primary-light);
