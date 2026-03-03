@@ -10,19 +10,28 @@ const App = {
     adminFilter: 'all',
     adminMembers: [],
     memberFilter: 'all',
+    _initialized: false,
 
     init() {
-        this.setupNavigation();
-        this.setupOrderForm();
-        this.setupModal();
-        this.setupFilters();
+        // Evitar duplicar event listeners
+        if (!this._initialized) {
+            this.setupNavigation();
+            this.setupOrderForm();
+            this.setupModal();
+            this.setupFilters();
+            this._initialized = true;
+        }
+
         this.loadOrders();
 
         // Inicializar admin se aplicável
         if (Auth.isAdmin) {
-            this.setupAdminTabs();
-            this.setupAdminFilters();
-            this.setupMemberFilters();
+            if (!this._adminInitialized) {
+                this.setupAdminTabs();
+                this.setupAdminFilters();
+                this.setupMemberFilters();
+                this._adminInitialized = true;
+            }
             this.loadAdminOrders();
             this.loadMembers();
         }
