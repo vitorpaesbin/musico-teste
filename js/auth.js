@@ -6,6 +6,7 @@ const Auth = {
     currentUser: null,
     currentProfile: null,
     isAdmin: false,
+    _isHandlingAuth: false,
 
     init() {
         // Event listeners de formulário
@@ -52,7 +53,7 @@ const Auth = {
                 await this.loadProfile();
 
                 // Verificar se o membro está ativo
-                if (this.currentProfile && this.currentProfile.active === false) {
+                if (!this.currentProfile || this.currentProfile.active !== true) {
                     await supabaseClient.auth.signOut();
                     this.currentUser = null;
                     this.currentProfile = null;
@@ -73,12 +74,15 @@ const Auth = {
 
         // Listener de mudança de auth
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            // Ignorar se o login() já está processando
+            if (this._isHandlingAuth) return;
+
             if (event === 'SIGNED_IN' && session) {
                 this.currentUser = session.user;
                 await this.loadProfile();
 
                 // Verificar se o membro está ativo
-                if (this.currentProfile && this.currentProfile.active === false) {
+                if (!this.currentProfile || this.currentProfile.active !== true) {
                     await supabaseClient.auth.signOut();
                     this.currentUser = null;
                     this.currentProfile = null;
@@ -107,6 +111,8 @@ const Auth = {
 
         try {
             showLoading();
+            this._isHandlingAuth = true;
+
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email,
                 password
@@ -118,7 +124,7 @@ const Auth = {
             await this.loadProfile();
 
             // Verificar se o membro está ativo
-            if (this.currentProfile && this.currentProfile.active === false) {
+            if (!this.currentProfile || this.currentProfile.active !== true) {
                 await supabaseClient.auth.signOut();
                 this.currentUser = null;
                 this.currentProfile = null;
@@ -138,6 +144,7 @@ const Auth = {
             }
             this.showMessage(msg, 'error');
         } finally {
+            this._isHandlingAuth = false;
             hideLoading();
         }
     },
@@ -293,7 +300,8 @@ const Auth = {
                 full_name: this.currentUser.user_metadata?.full_name || 'Usuário',
                 email: this.currentUser.email,
                 instrument: this.currentUser.user_metadata?.instrument || '-',
-                role: 'musician'
+                role: 'musician',
+                active: false
             };
 
             // Verificar se é admin
@@ -304,7 +312,8 @@ const Auth = {
                 full_name: this.currentUser.user_metadata?.full_name || 'Usuário',
                 email: this.currentUser.email,
                 instrument: this.currentUser.user_metadata?.instrument || '-',
-                role: 'musician'
+                role: 'musician',
+                active: false
             };
             this.isAdmin = false;
         }
