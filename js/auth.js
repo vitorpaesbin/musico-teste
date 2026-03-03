@@ -74,10 +74,15 @@ const Auth = {
 
         // Listener de mudança de auth
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            // Ignorar se o login() já está processando
+            // Ignorar se o login() já está processando ou app já está visível
             if (this._isHandlingAuth) return;
 
             if (event === 'SIGNED_IN' && session) {
+                // Se já está logado e app visível, ignorar evento duplicado
+                if (this.currentUser && !document.getElementById('app-container').classList.contains('hidden')) {
+                    return;
+                }
+
                 this.currentUser = session.user;
                 await this.loadProfile();
 

@@ -11,6 +11,7 @@ const App = {
     adminMembers: [],
     memberFilter: 'all',
     _initialized: false,
+    _isSubmitting: false,
 
     init() {
         // Evitar duplicar event listeners
@@ -175,6 +176,10 @@ const App = {
     },
 
     async submitOrder() {
+        // Evitar submissão dupla
+        if (this._isSubmitting) return;
+        this._isSubmitting = true;
+
         // Validar campos atuais e tentar adicionar como item
         const currentName = document.getElementById('item-name').value.trim();
         const category = document.querySelector('input[name="category"]:checked');
@@ -240,6 +245,7 @@ const App = {
             console.error('Erro ao enviar pedido:', error);
             showToast('Erro ao enviar pedido. Tente novamente.', 'error');
         } finally {
+            this._isSubmitting = false;
             hideLoading();
         }
     },
