@@ -113,7 +113,12 @@ CREATE POLICY "Usuários podem inserir próprio perfil"
 
 CREATE POLICY "Usuários podem atualizar próprio perfil"
     ON profiles FOR UPDATE
-    USING (auth.uid() = id);
+    USING (auth.uid() = id)
+    WITH CHECK (
+        auth.uid() = id
+        AND role = (SELECT role FROM profiles WHERE id = auth.uid())
+        AND active = (SELECT active FROM profiles WHERE id = auth.uid())
+    );
 
 DROP POLICY IF EXISTS "Admins podem atualizar todos os perfis" ON profiles;
 CREATE POLICY "Admins podem atualizar todos os perfis"

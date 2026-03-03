@@ -171,8 +171,6 @@ const Auth = {
 
         try {
             showLoading();
-            
-            console.log('Tentando cadastrar com email:', email);
 
             // Criar usuário no Supabase Auth
             const { data, error } = await supabaseClient.auth.signUp({
