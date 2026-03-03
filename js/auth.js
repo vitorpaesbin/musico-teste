@@ -58,7 +58,7 @@ const Auth = {
                     this.currentUser = null;
                     this.currentProfile = null;
                     this.showAuth();
-                    this.showMessage('Sua conta está inativa. Contate o administrador.', 'error');
+                    this.showMessage('Entre em contato com o administrador.', 'error');
                 } else {
                     this.showApp();
                 }
@@ -87,7 +87,7 @@ const Auth = {
                     this.currentUser = null;
                     this.currentProfile = null;
                     this.showAuth();
-                    this.showMessage('Sua conta está inativa. Contate o administrador.', 'error');
+                    this.showMessage('Entre em contato com o administrador.', 'error');
                     return;
                 }
 
@@ -128,7 +128,7 @@ const Auth = {
                 await supabaseClient.auth.signOut();
                 this.currentUser = null;
                 this.currentProfile = null;
-                this.showMessage('Sua conta está inativa. Contate o administrador.', 'error');
+                this.showMessage('Entre em contato com o administrador.', 'error');
                 return;
             }
 
